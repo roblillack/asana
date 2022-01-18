@@ -1,12 +1,11 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/url"
 	"os"
-	"regexp"
-	"strconv"
 
 	"github.com/urfave/cli/v2"
 
@@ -19,33 +18,22 @@ const (
 )
 
 func Tasks(c *cli.Context) {
+	var tasks []api.Task_t
+
 	if c.Bool("no-cache") {
-		fromAPI(false)
+		tasks = fromAPI(false)
 	} else {
 		if utils.Older(CacheDuration, utils.CacheFile()) || c.Bool("refresh") {
-			fromAPI(true)
+			tasks = fromAPI(true)
 		} else {
-			txt, err := ioutil.ReadFile(utils.CacheFile())
-			if err == nil {
-				lines := regexp.MustCompile("\n").Split(string(txt), -1)
-				for _, line := range lines {
-					if len(line) < 1 {
-						continue
-					}
-					format(line)
-				}
-			} else {
-				fromAPI(true)
+			txt, _ := ioutil.ReadFile(utils.CacheFile())
+			_ = json.Unmarshal(txt, &tasks)
+			if tasks == nil {
+				tasks = fromAPI(true)
 			}
 		}
 	}
-}
 
-func fromAPI(saveCache bool) {
-	tasks := api.Tasks(url.Values{}, false)
-	if saveCache {
-		cache(tasks)
-	}
 	for i, t := range tasks {
 		project := ""
 		for _, m := range t.Memberships {
@@ -65,24 +53,17 @@ func fromAPI(saveCache bool) {
 	}
 }
 
+func fromAPI(saveCache bool) []api.Task_t {
+	tasks := api.Tasks(url.Values{}, false)
+	if saveCache {
+		cache(tasks)
+	}
+	return tasks
+}
+
 func cache(tasks []api.Task_t) {
 	f, _ := os.Create(utils.CacheFile())
 	defer f.Close()
-	for i, t := range tasks {
-		f.WriteString(strconv.Itoa(i) + ":")
-		f.WriteString(t.Id + ":")
-		f.WriteString(t.Due_on + ":")
-		f.WriteString(t.Name + "\n")
-	}
-}
 
-func format(line string) {
-	dateRegexp := "[0-9]{4}-[0-9]{2}-[0-9]{2}"
-
-	index := regexp.MustCompile("^[0-9]*").FindString(line)
-	line = regexp.MustCompile("^[0-9]*:").ReplaceAllString(line, "") // remove index
-	line = regexp.MustCompile("^[0-9]*:").ReplaceAllString(line, "") // remove task_id
-	date := regexp.MustCompile("^" + dateRegexp).FindString(line)
-	line = regexp.MustCompile("^("+dateRegexp+")?:").ReplaceAllString(line, "") // remove date
-	fmt.Printf("%3s [ %10s ] %s\n", index, date, line)
+	utils.Check(json.NewEncoder(f).Encode(tasks))
 }
