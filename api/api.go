@@ -19,7 +19,7 @@ const (
 )
 
 type Base struct {
-	Id   int
+	Id   string `json:"gid"`
 	Name string
 }
 
@@ -53,7 +53,7 @@ func fire(req *http.Request) []byte {
 	client := &http.Client{}
 
 	req.Header.Set("User-Agent", UserAgent)
-	req.Header.Set("Authorization", "Bearer " + config.Load().Personal_access_token)
+	req.Header.Set("Authorization", "Bearer "+config.Load().Personal_access_token)
 
 	resp, err := client.Do(req)
 	body, err := ioutil.ReadAll(resp.Body)

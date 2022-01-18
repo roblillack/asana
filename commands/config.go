@@ -41,5 +41,5 @@ func Config(c *cli.Context) {
 	token := config.Load().Personal_access_token
 	f, _ := os.Create(utils.Home() + "/.asana.yml")
 	f.WriteString("personal_access_token: " + token + "\n")
-	f.WriteString("workspace: " + strconv.Itoa(ws[index].Id) + "\n")
+	f.WriteString("workspace: " + ws[index].Id + "\n")
 }

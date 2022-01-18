@@ -1,8 +1,8 @@
 package commands
 
 import (
+	"net/url"
 	"os/exec"
-	"strconv"
 
 	"github.com/urfave/cli/v2"
 
@@ -13,7 +13,7 @@ import (
 
 func Browse(c *cli.Context) {
 	taskId := api.FindTaskId(c.Args().First(), true)
-	url := "https://app.asana.com/0/" + strconv.Itoa(config.Load().Workspace) + "/" + taskId
+	url := "https://app.asana.com/0/" + url.PathEscape(config.Load().Workspace) + "/" + url.PathEscape(taskId)
 	launcher, err := utils.BrowserLauncher()
 	utils.Check(err)
 	cmd := exec.Command(launcher, url)

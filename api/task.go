@@ -15,7 +15,7 @@ import (
 )
 
 type Task_t struct {
-	Id              int
+	Id              string `json:"gid"`
 	Created_at      string
 	Modified_at     string
 	Name            string
@@ -33,7 +33,7 @@ type Task_t struct {
 }
 
 type Story_t struct {
-	Id         int
+	Id         string `json:"gid"`
 	Text       string
 	Type       string
 	Created_at string
@@ -47,7 +47,7 @@ func (a ByDue) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByDue) Less(i, j int) bool { return a[i].Due_on < a[j].Due_on }
 
 func Tasks(params url.Values, withCompleted bool) []Task_t {
-	params.Add("workspace", strconv.Itoa(config.Load().Workspace))
+	params.Add("workspace", config.Load().Workspace)
 	params.Add("assignee", "me")
 	params.Add("opt_fields", "name,completed,due_on")
 	var tasks map[string][]Task_t
@@ -77,13 +77,13 @@ func Task(taskId string, verbose bool) (Task_t, []Story_t) {
 	)
 	task_chan, stories_chan := make(chan []byte), make(chan []byte)
 	go func() {
-		task_chan <- Get("/api/1.0/tasks/"+taskId, nil)
+		task_chan <- Get("/api/1.0/tasks/"+url.PathEscape(taskId), nil)
 	}()
 
 	stories = nil
 	if verbose {
 		go func() {
-			stories_chan <- Get("/api/1.0/tasks/"+taskId+"/stories", nil)
+			stories_chan <- Get("/api/1.0/tasks/"+url.PathEscape(taskId)+"/stories", nil)
 		}()
 		err = json.Unmarshal(<-stories_chan, &ss)
 		utils.Check(err)
@@ -111,7 +111,7 @@ func FindTaskId(index string, autoFirst bool) string {
 		ind, parseErr := strconv.Atoi(index)
 		utils.Check(parseErr)
 		task := Tasks(url.Values{}, false)[ind]
-		id = strconv.Itoa(task.Id)
+		id = task.Id
 	} else {
 		lines := regexp.MustCompile("\n").Split(string(txt), -1)
 		for i, line := range lines {
@@ -137,22 +137,35 @@ type Commented_t struct {
 }
 
 func CommentTo(taskId string, comment string) string {
+	payload := map[string]interface{}{
+		"data": map[string]string{
+			"text": comment,
+		},
+	}
+	reqBody, err := json.Marshal(payload)
+	utils.Check(err)
 
-	respBody := Post("/tasks/"+taskId+"/stories", `{"data":{"text":"`+comment+`"}}`)
+	respBody := Post("/tasks/"+url.PathEscape(taskId)+"/stories", string(reqBody))
 
 	var output map[string]Commented_t
-	err := json.Unmarshal(respBody, &output)
-	utils.Check(err)
+	utils.Check(json.Unmarshal(respBody, &output))
 
 	return output["data"].Text
 }
 
 func Update(taskId string, key string, value string) Task_t {
-	respBody := Put("/tasks/"+taskId, `{"data":{"`+key+`":"`+value+`"}}`)
+	payload := map[string]interface{}{
+		"data": map[string]string{
+			key: value,
+		},
+	}
+	reqBody, err := json.Marshal(payload)
+	utils.Check(err)
+
+	respBody := Put("/tasks/"+url.PathEscape(taskId), string(reqBody))
 
 	var output map[string]Task_t
-	err := json.Unmarshal(respBody, &output)
-	utils.Check(err)
+	utils.Check(json.Unmarshal(respBody, &output))
 
 	return output["data"]
 }

@@ -47,7 +47,7 @@ func fromAPI(saveCache bool) {
 		cache(tasks)
 	}
 	for i, t := range tasks {
-		fmt.Printf("%2d [ %10s ] %s\n", i, t.Due_on, t.Name)
+		fmt.Printf("%3d [ %10s ] %s\n", i, t.Due_on, t.Name)
 	}
 }
 
@@ -56,7 +56,7 @@ func cache(tasks []api.Task_t) {
 	defer f.Close()
 	for i, t := range tasks {
 		f.WriteString(strconv.Itoa(i) + ":")
-		f.WriteString(strconv.Itoa(t.Id) + ":")
+		f.WriteString(t.Id + ":")
 		f.WriteString(t.Due_on + ":")
 		f.WriteString(t.Name + "\n")
 	}
@@ -70,5 +70,5 @@ func format(line string) {
 	line = regexp.MustCompile("^[0-9]*:").ReplaceAllString(line, "") // remove task_id
 	date := regexp.MustCompile("^" + dateRegexp).FindString(line)
 	line = regexp.MustCompile("^("+dateRegexp+")?:").ReplaceAllString(line, "") // remove date
-	fmt.Printf("%2s [ %10s ] %s\n", index, date, line)
+	fmt.Printf("%3s [ %10s ] %s\n", index, date, line)
 }
