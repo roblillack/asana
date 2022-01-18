@@ -30,6 +30,7 @@ type Task_t struct {
 	Parent          Base
 	Projects        []Base
 	Folloers        []Base
+	Memberships     []map[string]Base
 }
 
 type Story_t struct {
@@ -49,7 +50,7 @@ func (a ByDue) Less(i, j int) bool { return a[i].Due_on < a[j].Due_on }
 func Tasks(params url.Values, withCompleted bool) []Task_t {
 	params.Add("workspace", config.Load().Workspace)
 	params.Add("assignee", "me")
-	params.Add("opt_fields", "name,completed,due_on")
+	params.Add("opt_fields", "name,completed,due_on,memberships.project.name,memberships.section.name")
 	var tasks map[string][]Task_t
 	err := json.Unmarshal(Get("/api/1.0/tasks", params), &tasks)
 	utils.Check(err)

@@ -47,7 +47,21 @@ func fromAPI(saveCache bool) {
 		cache(tasks)
 	}
 	for i, t := range tasks {
-		fmt.Printf("%3d [ %10s ] %s\n", i, t.Due_on, t.Name)
+		project := ""
+		for _, m := range t.Memberships {
+			if v, ok := m["project"]; ok {
+				project = v.Name
+			}
+		}
+		for _, m := range t.Memberships {
+			if v, ok := m["section"]; ok {
+				project += fmt.Sprintf(" (%s)", v.Name)
+			}
+		}
+		if len(project) > 0 {
+			project += ": "
+		}
+		fmt.Printf("%3d [ %10s ] %s%s\n", i, t.Due_on, project, t.Name)
 	}
 }
 
